@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
+import { autoCheckSale, type PlatformSaleRow } from "@/lib/auto-match";
 
 export const Route = createFileRoute("/_authenticated/admin/validacao")({
   ssr: false,
@@ -24,6 +25,7 @@ function Validacao() {
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Map<string, any>>(new Map());
   const [profileList, setProfileList] = useState<any[]>([]);
+  const [platformRows, setPlatformRows] = useState<PlatformSaleRow[]>([]);
   const [filter, setFilter] = useState<"pending" | "validated" | "all">("pending");
   const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [monthFilter, setMonthFilter] = useState<string>(() => {
@@ -51,6 +53,12 @@ function Validacao() {
     const list = p ?? [];
     setProfiles(new Map(list.map((x: any) => [x.id, x])));
     setProfileList(list);
+    if (monthFilter !== "all") {
+      const { data: ps } = await supabase.from("platform_sales").select("*").eq("month", monthFilter);
+      setPlatformRows((ps ?? []) as any);
+    } else {
+      setPlatformRows([]);
+    }
   }
   useEffect(() => { load(); }, [filter, sellerFilter, monthFilter]);
 
@@ -85,6 +93,13 @@ function Validacao() {
     receita: rows.reduce((s, r) => s + Number(r.amount), 0),
     comissao: rows.reduce((s, r) => s + Number(r.commission_amount), 0),
   }), [rows]);
+
+  const autoByRow = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof autoCheckSale>>();
+    if (platformRows.length === 0) return map;
+    for (const r of rows) map.set(r.id, autoCheckSale(r, platformRows));
+    return map;
+  }, [rows, platformRows]);
 
   const sellerName = sellerFilter === "all" ? "Todos os vendedores" : (profiles.get(sellerFilter)?.full_name || profiles.get(sellerFilter)?.email || "—");
 
@@ -142,7 +157,7 @@ function Validacao() {
           <TableHeader><TableRow>
             <TableHead>Data</TableHead><TableHead>Vendedor</TableHead><TableHead>Produto</TableHead>
             <TableHead className="w-32">Valor</TableHead><TableHead className="w-32">Comissão</TableHead><TableHead>Plataforma</TableHead>
-            <TableHead>Tipo</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ação</TableHead>
+            <TableHead>Tipo</TableHead><TableHead>Automático</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ação</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {rows.map(r => {
@@ -150,8 +165,10 @@ function Validacao() {
               const amountVal = e.amount ?? String(r.amount);
               const commVal = e.commission_amount ?? String(r.commission_amount);
               const dirty = Number(amountVal) !== Number(r.amount) || Number(commVal) !== Number(r.commission_amount);
+              const auto = autoByRow.get(r.id);
+              const isDivergent = auto?.status === "divergent";
               return (
-                <TableRow key={r.id} className={r.refunded ? "opacity-60" : ""}>
+                <TableRow key={r.id} className={`${r.refunded ? "opacity-60" : ""} ${isDivergent ? "bg-destructive/10" : ""}`}>
                   <TableCell>{r.sale_date}</TableCell>
                   <TableCell>{profiles.get(r.seller_id)?.full_name || profiles.get(r.seller_id)?.email || "—"}</TableCell>
                   <TableCell>{r.products?.name}</TableCell>
@@ -166,6 +183,15 @@ function Validacao() {
                   </TableCell>
                   <TableCell>{r.platform}</TableCell>
                   <TableCell>{r.sale_type}</TableCell>
+                  <TableCell>
+                    {!auto ? <span className="text-xs text-muted-foreground">—</span>
+                      : auto.status === "ok"
+                        ? <Badge className="bg-emerald-600 text-white">OK</Badge>
+                        : <Badge variant="destructive" title={auto.reason}>Divergência</Badge>}
+                    {auto?.reason && auto.status === "divergent" && (
+                      <div className="text-[10px] text-muted-foreground mt-1 max-w-[160px]">{auto.reason}</div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {r.refunded
                       ? <Badge variant="destructive">Reembolsada</Badge>
@@ -187,7 +213,7 @@ function Validacao() {
                 </TableRow>
               );
             })}
-            {rows.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Sem vendas.</TableCell></TableRow>}
+            {rows.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Sem vendas.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent>
