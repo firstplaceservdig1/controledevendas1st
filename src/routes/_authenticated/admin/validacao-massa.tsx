@@ -155,16 +155,16 @@ function ValidacaoMassa() {
   const platformRows: PlatformSaleRow[] = imported;
   const results = useMemo(() => sales.map((s) => ({ sale: s, res: autoCheckSale(s, platformRows) })), [sales, platformRows]);
   const okCount = results.filter((r) => r.res.status === "ok").length;
-  const divCount = results.filter((r) => r.res.status === "divergent").length;
+  const mismatchCount = results.filter((r) => r.res.status === "value_mismatch").length;
+  const notFoundCount = results.filter((r) => r.res.status === "not_found").length;
+  const refundedCount = results.filter((r) => r.res.status === "refunded").length;
 
   // platform rows that have no matching system sale
   const orphanPlatform = useMemo(() => {
     return imported.filter((p) => {
       if (isRefundStatus(p.platform_status)) return false;
       const has = sales.some((s) =>
-        s.platform === p.platform &&
-        (s.buyer_email || "").trim().toLowerCase() === (p.buyer_email || "").trim().toLowerCase() &&
-        Math.abs(Number(s.amount) - Number(p.amount)) < 0.01
+        (s.buyer_email || "").trim().toLowerCase() === (p.buyer_email || "").trim().toLowerCase()
       );
       return !has;
     });
@@ -213,7 +213,9 @@ function ValidacaoMassa() {
             <Badge variant="outline">{imported.length} registros na plataforma</Badge>
             <Badge variant="outline">{sales.length} vendas no sistema</Badge>
             <Badge className="bg-emerald-600 text-white">{okCount} OK</Badge>
-            <Badge variant="destructive">{divCount} divergentes</Badge>
+            <Badge className="bg-amber-500 text-white">{mismatchCount} valor divergente</Badge>
+            <Badge variant="destructive">{notFoundCount} não encontrado</Badge>
+            <Badge className="bg-purple-600 text-white">{refundedCount} estornado</Badge>
             <Badge variant="secondary">{orphanPlatform.length} só na plataforma</Badge>
             {imported.length > 0 && (
               <Button size="sm" variant="ghost" onClick={clearMonth} className="ml-auto">
@@ -234,21 +236,29 @@ function ValidacaoMassa() {
               <TableHead>Automático</TableHead><TableHead>Observação</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {results.map(({ sale, res }) => (
-                <TableRow key={sale.id} className={res.status === "divergent" ? "bg-destructive/10" : ""}>
+              {results.map(({ sale, res }) => {
+                const rowClass =
+                  res.status === "ok" ? "bg-emerald-500/10"
+                  : res.status === "value_mismatch" ? "bg-amber-500/15"
+                  : res.status === "not_found" ? "bg-destructive/15"
+                  : "bg-purple-500/15";
+                return (
+                <TableRow key={sale.id} className={rowClass}>
                   <TableCell>{sale.sale_date}</TableCell>
                   <TableCell className="max-w-[220px] truncate">{sale.buyer_email}</TableCell>
                   <TableCell>{sale.platform}</TableCell>
                   <TableCell>{sale.products?.name}</TableCell>
                   <TableCell className="text-right">{brl(Number(sale.amount))}</TableCell>
                   <TableCell>
-                    {res.status === "ok"
-                      ? <Badge className="bg-emerald-600 text-white">OK</Badge>
-                      : <Badge variant="destructive">Divergência</Badge>}
+                    {res.status === "ok" ? <Badge className="bg-emerald-600 text-white">OK</Badge>
+                      : res.status === "value_mismatch" ? <Badge className="bg-amber-500 text-white">Valor divergente</Badge>
+                      : res.status === "refunded" ? <Badge className="bg-purple-600 text-white">Estornado</Badge>
+                      : <Badge variant="destructive">Não encontrado</Badge>}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{res.reason ?? ""}</TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               {!loading && results.length === 0 && (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma venda cadastrada nesse mês.</TableCell></TableRow>
               )}
