@@ -26,6 +26,10 @@ function Validacao() {
   const [profileList, setProfileList] = useState<any[]>([]);
   const [filter, setFilter] = useState<"pending" | "validated" | "all">("pending");
   const [sellerFilter, setSellerFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [edits, setEdits] = useState<Record<string, { amount?: string; commission_amount?: string }>>({});
 
   async function load() {
@@ -33,6 +37,13 @@ function Validacao() {
     if (filter === "pending") q = q.eq("validated", false);
     if (filter === "validated") q = q.eq("validated", true);
     if (sellerFilter !== "all") q = q.eq("seller_id", sellerFilter);
+    if (monthFilter !== "all") {
+      const [y, m] = monthFilter.split("-").map(Number);
+      const first = `${monthFilter}-01`;
+      const lastDay = new Date(y, m, 0).getDate();
+      const last = `${monthFilter}-${String(lastDay).padStart(2, "0")}`;
+      q = q.gte("sale_date", first).lte("sale_date", last);
+    }
     const { data } = await q;
     setRows(data ?? []);
     setEdits({});
@@ -41,7 +52,7 @@ function Validacao() {
     setProfiles(new Map(list.map((x: any) => [x.id, x])));
     setProfileList(list);
   }
-  useEffect(() => { load(); }, [filter, sellerFilter]);
+  useEffect(() => { load(); }, [filter, sellerFilter, monthFilter]);
 
   async function toggle(id: string, validated: boolean) {
     try {
@@ -77,16 +88,36 @@ function Validacao() {
 
   const sellerName = sellerFilter === "all" ? "Todos os vendedores" : (profiles.get(sellerFilter)?.full_name || profiles.get(sellerFilter)?.email || "—");
 
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      opts.push({ value, label: d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) });
+    }
+    return opts;
+  }, []);
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <CardTitle>Validar vendas</CardTitle>
+          <CardTitle>Fechamento</CardTitle>
           <div className="text-sm text-muted-foreground mt-1">
             {sellerName} · {rows.length} venda(s) · Receita {brl(totals.receita)} · Comissão {brl(totals.comissao)}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Mês" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os meses</SelectItem>
+              {monthOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value} className="capitalize">{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={sellerFilter} onValueChange={setSellerFilter}>
             <SelectTrigger className="w-56"><SelectValue placeholder="Vendedor" /></SelectTrigger>
             <SelectContent>
