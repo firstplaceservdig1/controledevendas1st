@@ -35,7 +35,6 @@ function Dashboard() {
 
   const totalVendas = rows.length;
   const comissao = rows.reduce((s, r) => s + Number(r.commission_amount), 0);
-  const receita = rows.reduce((s, r) => s + Number(r.amount), 0);
   const progresso = Math.min(100, Math.round((comissao / META) * 100));
 
   const byType = ["Passiva", "Ativa"].map((t) => ({
