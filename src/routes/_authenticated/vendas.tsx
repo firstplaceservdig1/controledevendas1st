@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, RotateCcw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/vendas")({
   ssr: false,
@@ -38,6 +38,14 @@ function VendasPage() {
     if (!confirm("Excluir esta venda?")) return;
     const { error } = await supabase.from("sales").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Excluída"); load(); }
+  }
+
+  async function toggleRefund(r: any) {
+    const next = !r.refunded;
+    if (next && !confirm("Marcar esta venda como reembolsada? A comissão será zerada.")) return;
+    const { error } = await supabase.from("sales").update({ refunded: next }).eq("id", r.id);
+    if (error) toast.error(error.message);
+    else { toast.success(next ? "Marcada como reembolsada" : "Reembolso removido"); load(); }
   }
 
   async function saveEdit() {
@@ -70,12 +78,15 @@ function VendasPage() {
                   <TableCell>{brl(Number(r.commission_amount))}</TableCell>
                   <TableCell>{r.platform}</TableCell>
                   <TableCell>{r.sale_type}</TableCell>
-                  <TableCell>{r.validated
-                    ? <Badge className="bg-accent text-accent-foreground">Validado</Badge>
-                    : <Badge variant="secondary">Não validado</Badge>}</TableCell>
+                  <TableCell>{r.refunded
+                    ? <Badge variant="destructive">Reembolsada</Badge>
+                    : r.validated
+                      ? <Badge className="bg-accent text-accent-foreground">Validado</Badge>
+                      : <Badge variant="secondary">Não validado</Badge>}</TableCell>
                   <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" disabled={r.validated} onClick={() => setEditing({ ...r })}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" disabled={r.validated} onClick={() => remove(r.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" disabled={r.validated} onClick={() => setEditing({ ...r })} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" disabled={r.validated} onClick={() => toggleRefund(r)} title={r.refunded ? "Reverter reembolso" : "Marcar como reembolsada"}><RotateCcw className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" disabled={r.validated} onClick={() => remove(r.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
