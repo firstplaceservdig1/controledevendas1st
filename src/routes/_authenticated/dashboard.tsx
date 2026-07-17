@@ -35,7 +35,6 @@ function Dashboard() {
 
   const totalVendas = rows.length;
   const comissao = rows.reduce((s, r) => s + Number(r.commission_amount), 0);
-  const receita = rows.reduce((s, r) => s + Number(r.amount), 0);
   const progresso = Math.min(100, Math.round((comissao / META) * 100));
 
   const byType = ["Passiva", "Ativa"].map((t) => ({
@@ -65,9 +64,8 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Stat title="Total de vendas (mês)" value={String(totalVendas)} />
-        <Stat title="Receita bruta" value={brl(receita)} />
         <Stat title="Comissão acumulada" value={brl(comissao)} />
         <Stat title="Produto mais vendido" value={topProduto} />
       </div>

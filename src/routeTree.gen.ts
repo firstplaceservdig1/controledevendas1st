@@ -18,6 +18,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminVendedoresRouteImport } from './routes/_authenticated/admin/vendedores'
 import { Route as AuthenticatedAdminValidacaoRouteImport } from './routes/_authenticated/admin/validacao'
 import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated/admin/produtos'
+import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -66,6 +67,12 @@ const AuthenticatedAdminProdutosRoute =
     path: '/admin/produtos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminDashboardRoute =
+  AuthenticatedAdminDashboardRouteImport.update({
+    id: '/admin/dashboard',
+    path: '/admin/dashboard',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/vendas': typeof AuthenticatedVendasRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/validacao': typeof AuthenticatedAdminValidacaoRoute
   '/admin/vendedores': typeof AuthenticatedAdminVendedoresRoute
@@ -83,6 +91,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/vendas': typeof AuthenticatedVendasRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/validacao': typeof AuthenticatedAdminValidacaoRoute
   '/admin/vendedores': typeof AuthenticatedAdminVendedoresRoute
@@ -95,6 +104,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
+  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/_authenticated/admin/validacao': typeof AuthenticatedAdminValidacaoRoute
   '/_authenticated/admin/vendedores': typeof AuthenticatedAdminVendedoresRoute
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/nova-venda'
     | '/vendas'
+    | '/admin/dashboard'
     | '/admin/produtos'
     | '/admin/validacao'
     | '/admin/vendedores'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/nova-venda'
     | '/vendas'
+    | '/admin/dashboard'
     | '/admin/produtos'
     | '/admin/validacao'
     | '/admin/vendedores'
@@ -128,6 +140,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/nova-venda'
     | '/_authenticated/vendas'
+    | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/produtos'
     | '/_authenticated/admin/validacao'
     | '/_authenticated/admin/vendedores'
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProdutosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/dashboard': {
+      id: '/_authenticated/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -211,6 +231,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNovaVendaRoute: typeof AuthenticatedNovaVendaRoute
   AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
+  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
   AuthenticatedAdminValidacaoRoute: typeof AuthenticatedAdminValidacaoRoute
   AuthenticatedAdminVendedoresRoute: typeof AuthenticatedAdminVendedoresRoute
@@ -220,6 +241,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNovaVendaRoute: AuthenticatedNovaVendaRoute,
   AuthenticatedVendasRoute: AuthenticatedVendasRoute,
+  AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
   AuthenticatedAdminValidacaoRoute: AuthenticatedAdminValidacaoRoute,
   AuthenticatedAdminVendedoresRoute: AuthenticatedAdminVendedoresRoute,
