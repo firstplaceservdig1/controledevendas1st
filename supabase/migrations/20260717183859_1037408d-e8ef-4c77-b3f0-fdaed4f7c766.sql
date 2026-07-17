@@ -1,0 +1,1 @@
+INSERT INTO public.user_roles (user_id, role) VALUES ('709772b8-2bb4-4961-abac-82a6485cc723', 'admin') ON CONFLICT (user_id, role) DO NOTHING;
