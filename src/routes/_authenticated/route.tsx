@@ -6,7 +6,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, PlusCircle, List, Package, Users, CheckCircle2, LogOut } from "lucide-react";
+import { LayoutDashboard, PlusCircle, List, Package, Users, CheckCircle2, LogOut, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -46,6 +46,7 @@ function AuthedLayout() {
     { title: "Minhas vendas", url: "/vendas", icon: List },
   ];
   const adminItems = [
+    { title: "Dashboard geral", url: "/admin/dashboard", icon: BarChart3 },
     { title: "Produtos", url: "/admin/produtos", icon: Package },
     { title: "Vendedores", url: "/admin/vendedores", icon: Users },
     { title: "Validar vendas", url: "/admin/validacao", icon: CheckCircle2 },
