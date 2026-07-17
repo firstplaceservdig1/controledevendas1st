@@ -82,6 +82,7 @@ export type Database = {
           platform: Database["public"]["Enums"]["sale_platform"]
           platform_fee_pct_snapshot: number
           product_id: string
+          refunded: boolean
           sale_date: string
           sale_type: Database["public"]["Enums"]["sale_type"]
           seller_id: string
@@ -103,6 +104,7 @@ export type Database = {
           platform: Database["public"]["Enums"]["sale_platform"]
           platform_fee_pct_snapshot?: number
           product_id: string
+          refunded?: boolean
           sale_date?: string
           sale_type: Database["public"]["Enums"]["sale_type"]
           seller_id: string
@@ -124,6 +126,7 @@ export type Database = {
           platform?: Database["public"]["Enums"]["sale_platform"]
           platform_fee_pct_snapshot?: number
           product_id?: string
+          refunded?: boolean
           sale_date?: string
           sale_type?: Database["public"]["Enums"]["sale_type"]
           seller_id?: string
