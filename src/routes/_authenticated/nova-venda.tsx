@@ -41,7 +41,7 @@ function NovaVenda() {
       buyer_phone: form.buyer_phone,
       sale_type: form.sale_type as any,
       notes: form.notes || null,
-    });
+    } as any);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Venda registrada!");
