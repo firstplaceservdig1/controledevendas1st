@@ -14,22 +14,51 @@ export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   component: AdminDashboard,
 });
 
+const MONTH_LABELS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+function generateMonthOptions(): { value: string; label: string }[] {
+  const opts: { value: string; label: string }[] = [];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  for (let y = currentYear - 1; y <= currentYear + 1; y++) {
+    for (let m = 0; m < 12; m++) {
+      const value = `${y}-${String(m + 1).padStart(2, "0")}`;
+      opts.push({ value, label: `${MONTH_LABELS[m]}/${y}` });
+    }
+  }
+  return opts;
+}
+
+function monthBounds(value: string) {
+  const [y, m] = value.split("-").map(Number);
+  const first = ymd(new Date(y, m - 1, 1));
+  const last = ymd(new Date(y, m, 0));
+  return { first, last, y, m };
+}
+
 function AdminDashboard() {
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Map<string, any>>(new Map());
   const [sellerFilter, setSellerFilter] = useState<string>("all");
+  const [month, setMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  const monthOptions = useMemo(() => generateMonthOptions(), []);
 
   useEffect(() => {
-    const now = new Date();
-    const first = ymd(new Date(now.getFullYear(), now.getMonth(), 1));
-    const last = ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const { first, last } = monthBounds(month);
     supabase.from("sales").select("*, products(name)")
       .gte("sale_date", first).lte("sale_date", last)
       .order("sale_date", { ascending: false })
       .then(({ data }) => setRows(data ?? []));
     supabase.from("profiles").select("*")
-      .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p]))));
-  }, []);
+      .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p])));
+  }, [month]);
 
   const filteredRows = useMemo(() => {
     if (sellerFilter === "all") return rows;
@@ -85,24 +114,38 @@ function AdminDashboard() {
     return [...profiles.entries()].map(([id, p]) => ({ id, nome: p.full_name || p.email || "—" }));
   }, [profiles]);
 
+  const selectedMonthLabel = monthOptions.find((o) => o.value === month)?.label ?? month;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">Dashboard geral</h1>
-          <p className="text-sm text-muted-foreground">Visão consolidada do mês atual.</p>
+          <p className="text-sm text-muted-foreground">Visão consolidada de {selectedMonthLabel}.</p>
         </div>
-        <Select value={sellerFilter} onValueChange={setSellerFilter}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Filtrar por vendedor" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os vendedores</SelectItem>
-            {sellerOptions.map((s) => (
-              <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Select value={month} onValueChange={setMonth}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sellerFilter} onValueChange={setSellerFilter}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Filtrar por vendedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os vendedores</SelectItem>
+              {sellerOptions.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
