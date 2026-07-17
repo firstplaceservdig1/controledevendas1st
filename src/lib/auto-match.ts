@@ -19,7 +19,7 @@ export type SaleRow = {
   refunded?: boolean;
 };
 
-export type AutoStatus = "ok" | "divergent" | "missing";
+export type AutoStatus = "ok" | "value_mismatch" | "not_found" | "refunded";
 
 export type AutoResult = {
   status: AutoStatus;
@@ -42,26 +42,24 @@ export function monthOf(dateISO: string): string {
 
 export function autoCheckSale(sale: SaleRow, platformRows: PlatformSaleRow[]): AutoResult {
   const email = norm(sale.buyer_email);
-  const platform = sale.platform;
   const amount = Number(sale.amount);
   const month = monthOf(sale.sale_date);
 
-  const sameKey = platformRows.filter(
-    (p) => p.month === month && p.platform === platform && norm(p.buyer_email) === email,
+  const sameEmail = platformRows.filter(
+    (p) => p.month === month && norm(p.buyer_email) === email,
   );
-  if (sameKey.length === 0) {
-    return { status: "divergent", reason: "Sem correspondente na plataforma" };
+  if (sameEmail.length === 0) {
+    return { status: "not_found", reason: "E-mail não encontrado no CSV" };
   }
-  const exact = sameKey.find((p) => Math.abs(Number(p.amount) - amount) < 0.01);
+  // Prefer exact value match if any
+  const exact = sameEmail.find((p) => Math.abs(Number(p.amount) - amount) < 0.01);
+  const chosen = exact ?? sameEmail[0];
+  if (isRefundStatus(chosen.platform_status)) {
+    return { status: "refunded", reason: `Estornado na plataforma (${chosen.platform_status})`, match: chosen };
+  }
   if (!exact) {
-    const diffs = sameKey.map((p) => Number(p.amount).toFixed(2)).join(", ");
-    return { status: "divergent", reason: `Valor divergente (plataforma: ${diffs})`, match: sameKey[0] };
-  }
-  if (isRefundStatus(exact.platform_status) && !sale.refunded) {
-    return { status: "divergent", reason: `Status na plataforma: ${exact.platform_status}`, match: exact };
-  }
-  if (sale.refunded && !isRefundStatus(exact.platform_status)) {
-    return { status: "divergent", reason: "Marcada como reembolsada, mas plataforma aprovou", match: exact };
+    const diffs = sameEmail.map((p) => Number(p.amount).toFixed(2)).join(", ");
+    return { status: "value_mismatch", reason: `Valor divergente (plataforma: ${diffs})`, match: chosen };
   }
   return { status: "ok", match: exact };
 }

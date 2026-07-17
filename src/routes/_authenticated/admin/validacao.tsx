@@ -166,9 +166,14 @@ function Validacao() {
               const commVal = e.commission_amount ?? String(r.commission_amount);
               const dirty = Number(amountVal) !== Number(r.amount) || Number(commVal) !== Number(r.commission_amount);
               const auto = autoByRow.get(r.id);
-              const isDivergent = auto?.status === "divergent";
+              const rowClass =
+                auto?.status === "ok" ? "bg-emerald-500/10"
+                : auto?.status === "value_mismatch" ? "bg-amber-500/15"
+                : auto?.status === "not_found" ? "bg-destructive/15"
+                : auto?.status === "refunded" ? "bg-purple-500/15"
+                : "";
               return (
-                <TableRow key={r.id} className={`${r.refunded ? "opacity-60" : ""} ${isDivergent ? "bg-destructive/10" : ""}`}>
+                <TableRow key={r.id} className={`${r.refunded ? "opacity-60" : ""} ${rowClass}`}>
                   <TableCell>{r.sale_date}</TableCell>
                   <TableCell>{profiles.get(r.seller_id)?.full_name || profiles.get(r.seller_id)?.email || "—"}</TableCell>
                   <TableCell>{r.products?.name}</TableCell>
@@ -185,10 +190,11 @@ function Validacao() {
                   <TableCell>{r.sale_type}</TableCell>
                   <TableCell>
                     {!auto ? <span className="text-xs text-muted-foreground">—</span>
-                      : auto.status === "ok"
-                        ? <Badge className="bg-emerald-600 text-white">OK</Badge>
-                        : <Badge variant="destructive" title={auto.reason}>Divergência</Badge>}
-                    {auto?.reason && auto.status === "divergent" && (
+                      : auto.status === "ok" ? <Badge className="bg-emerald-600 text-white">OK</Badge>
+                      : auto.status === "value_mismatch" ? <Badge className="bg-amber-500 text-white" title={auto.reason}>Valor divergente</Badge>
+                      : auto.status === "refunded" ? <Badge className="bg-purple-600 text-white" title={auto.reason}>Estornado</Badge>
+                      : <Badge variant="destructive" title={auto.reason}>Não encontrado</Badge>}
+                    {auto?.reason && auto.status !== "ok" && (
                       <div className="text-[10px] text-muted-foreground mt-1 max-w-[160px]">{auto.reason}</div>
                     )}
                   </TableCell>
