@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      platform_sales: {
+        Row: {
+          amount: number
+          buyer_email: string
+          created_at: string
+          id: string
+          import_batch: string
+          imported_by: string | null
+          month: string
+          platform: Database["public"]["Enums"]["sale_platform"]
+          platform_status: string | null
+          purchase_date: string | null
+        }
+        Insert: {
+          amount: number
+          buyer_email: string
+          created_at?: string
+          id?: string
+          import_batch: string
+          imported_by?: string | null
+          month: string
+          platform: Database["public"]["Enums"]["sale_platform"]
+          platform_status?: string | null
+          purchase_date?: string | null
+        }
+        Update: {
+          amount?: number
+          buyer_email?: string
+          created_at?: string
+          id?: string
+          import_batch?: string
+          imported_by?: string | null
+          month?: string
+          platform?: Database["public"]["Enums"]["sale_platform"]
+          platform_status?: string | null
+          purchase_date?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
