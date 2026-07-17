@@ -17,24 +17,33 @@ export type Database = {
       products: {
         Row: {
           active: boolean
+          agency_commission_pct: number
           commission_pct: number
           created_at: string
           id: string
           name: string
+          platform_fee_pct: number
+          seller_commission_pct: number
         }
         Insert: {
           active?: boolean
+          agency_commission_pct?: number
           commission_pct: number
           created_at?: string
           id?: string
           name: string
+          platform_fee_pct?: number
+          seller_commission_pct?: number
         }
         Update: {
           active?: boolean
+          agency_commission_pct?: number
           commission_pct?: number
           created_at?: string
           id?: string
           name?: string
+          platform_fee_pct?: number
+          seller_commission_pct?: number
         }
         Relationships: []
       }
@@ -61,6 +70,7 @@ export type Database = {
       }
       sales: {
         Row: {
+          agency_commission_pct_snapshot: number
           amount: number
           buyer_email: string
           buyer_phone: string
@@ -70,6 +80,7 @@ export type Database = {
           id: string
           notes: string | null
           platform: Database["public"]["Enums"]["sale_platform"]
+          platform_fee_pct_snapshot: number
           product_id: string
           sale_date: string
           sale_type: Database["public"]["Enums"]["sale_type"]
@@ -80,6 +91,7 @@ export type Database = {
           validated_by: string | null
         }
         Insert: {
+          agency_commission_pct_snapshot?: number
           amount: number
           buyer_email: string
           buyer_phone: string
@@ -89,6 +101,7 @@ export type Database = {
           id?: string
           notes?: string | null
           platform: Database["public"]["Enums"]["sale_platform"]
+          platform_fee_pct_snapshot?: number
           product_id: string
           sale_date?: string
           sale_type: Database["public"]["Enums"]["sale_type"]
@@ -99,6 +112,7 @@ export type Database = {
           validated_by?: string | null
         }
         Update: {
+          agency_commission_pct_snapshot?: number
           amount?: number
           buyer_email?: string
           buyer_phone?: string
@@ -108,6 +122,7 @@ export type Database = {
           id?: string
           notes?: string | null
           platform?: Database["public"]["Enums"]["sale_platform"]
+          platform_fee_pct_snapshot?: number
           product_id?: string
           sale_date?: string
           sale_type?: Database["public"]["Enums"]["sale_type"]
