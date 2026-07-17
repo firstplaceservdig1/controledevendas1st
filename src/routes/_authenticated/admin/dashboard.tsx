@@ -57,7 +57,7 @@ function AdminDashboard() {
       .order("sale_date", { ascending: false })
       .then(({ data }) => setRows(data ?? []));
     supabase.from("profiles").select("*")
-      .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p])));
+      .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p]))));
   }, [month]);
 
   const filteredRows = useMemo(() => {
