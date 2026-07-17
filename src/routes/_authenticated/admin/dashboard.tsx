@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { brl, ymd } from "@/lib/format";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/admin/dashboard")({
 function AdminDashboard() {
   const [rows, setRows] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Map<string, any>>(new Map());
+  const [sellerFilter, setSellerFilter] = useState<string>("all");
 
   useEffect(() => {
     const now = new Date();
@@ -29,18 +31,32 @@ function AdminDashboard() {
       .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p]))));
   }, []);
 
-  const totalVendas = rows.length;
-  const receita = rows.reduce((s, r) => s + Number(r.amount), 0);
-  const comissao = rows.reduce((s, r) => s + Number(r.commission_amount), 0);
-  const validadas = rows.filter((r) => r.validated).length;
-  const reembolsadas = rows.filter((r) => r.refunded).length;
+  const filteredRows = useMemo(() => {
+    if (sellerFilter === "all") return rows;
+    return rows.filter((r) => r.seller_id === sellerFilter);
+  }, [rows, sellerFilter]);
+
+  const totalVendas = filteredRows.length;
+  const receita = filteredRows.reduce((s, r) => s + Number(r.amount), 0);
+  const liquidoAgencia = filteredRows.reduce((s, r) => {
+    if (r.refunded) return s;
+    const net = Number(r.amount) * (1 - Number(r.platform_fee_pct_snapshot) / 100);
+    return s + net * (Number(r.agency_commission_pct_snapshot) / 100);
+  }, 0);
+  const comissao = filteredRows.reduce((s, r) => s + Number(r.commission_amount), 0);
+  const validadas = filteredRows.filter((r) => r.validated).length;
+  const reembolsadas = filteredRows.filter((r) => r.refunded).length;
 
   const bySeller = useMemo(() => {
-    const m = new Map<string, { vendas: number; receita: number; comissao: number; validadas: number }>();
+    const m = new Map<string, { vendas: number; receita: number; liquido: number; comissao: number; validadas: number }>();
     for (const r of rows) {
-      const cur = m.get(r.seller_id) ?? { vendas: 0, receita: 0, comissao: 0, validadas: 0 };
+      const cur = m.get(r.seller_id) ?? { vendas: 0, receita: 0, liquido: 0, comissao: 0, validadas: 0 };
       cur.vendas += 1;
       cur.receita += Number(r.amount);
+      if (!r.refunded) {
+        const net = Number(r.amount) * (1 - Number(r.platform_fee_pct_snapshot) / 100);
+        cur.liquido += net * (Number(r.agency_commission_pct_snapshot) / 100);
+      }
       cur.comissao += Number(r.commission_amount);
       if (r.validated) cur.validadas += 1;
       m.set(r.seller_id, cur);
@@ -53,11 +69,11 @@ function AdminDashboard() {
   }, [rows, profiles]);
 
   const byType = ["Passiva", "Ativa"].map((t) => ({
-    name: t, value: rows.filter((r) => r.sale_type === t).length,
+    name: t, value: filteredRows.filter((r) => r.sale_type === t).length,
   }));
 
   const productAgg = new Map<string, number>();
-  rows.forEach((r) => {
+  filteredRows.forEach((r) => {
     const n = r.products?.name ?? "—";
     productAgg.set(n, (productAgg.get(n) ?? 0) + Number(r.amount));
   });
@@ -65,11 +81,34 @@ function AdminDashboard() {
     .map(([name, receita]) => ({ name, receita }))
     .sort((a, b) => b.receita - a.receita).slice(0, 6);
 
+  const sellerOptions = useMemo(() => {
+    return [...profiles.entries()].map(([id, p]) => ({ id, nome: p.full_name || p.email || "—" }));
+  }, [profiles]);
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">Dashboard geral</h1>
+          <p className="text-sm text-muted-foreground">Visão consolidada do mês atual.</p>
+        </div>
+        <Select value={sellerFilter} onValueChange={setSellerFilter}>
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue placeholder="Filtrar por vendedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os vendedores</SelectItem>
+            {sellerOptions.map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         <Stat title="Vendas (mês)" value={String(totalVendas)} />
         <Stat title="Receita bruta" value={brl(receita)} />
+        <Stat title="Líquido agência" value={brl(liquidoAgencia)} />
         <Stat title="Comissão total" value={brl(comissao)} />
         <Stat title="Validadas" value={`${validadas}/${totalVendas}`} />
         <Stat title="Reembolsadas" value={String(reembolsadas)} />
@@ -81,15 +120,17 @@ function AdminDashboard() {
           <Table>
             <TableHeader><TableRow>
               <TableHead>Vendedor</TableHead><TableHead className="text-right">Vendas</TableHead>
-              <TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Comissão</TableHead>
+              <TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Líquido agência</TableHead>
+              <TableHead className="text-right">Comissão</TableHead>
               <TableHead className="text-right">Validadas</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {bySeller.map((s) => (
-                <TableRow key={s.id}>
+                <TableRow key={s.id} className={sellerFilter === s.id ? "bg-muted/50" : undefined}>
                   <TableCell className="font-medium">{s.nome}</TableCell>
                   <TableCell className="text-right">{s.vendas}</TableCell>
                   <TableCell className="text-right">{brl(s.receita)}</TableCell>
+                  <TableCell className="text-right">{brl(s.liquido)}</TableCell>
                   <TableCell className="text-right">{brl(s.comissao)}</TableCell>
                   <TableCell className="text-right">
                     <Badge variant={s.validadas === s.vendas ? "default" : "secondary"} className={s.validadas === s.vendas ? "bg-accent text-accent-foreground" : ""}>
@@ -98,7 +139,7 @@ function AdminDashboard() {
                   </TableCell>
                 </TableRow>
               ))}
-              {bySeller.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Sem vendas no mês.</TableCell></TableRow>}
+              {bySeller.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Sem vendas no mês.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
