@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedNovaVendaRouteImport } from './routes/_authenticated/nova-venda'
+import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminVendedoresRouteImport } from './routes/_authenticated/admin/vendedores'
 import { Route as AuthenticatedAdminValidacaoRouteImport } from './routes/_authenticated/admin/validacao'
@@ -42,6 +43,11 @@ const AuthenticatedVendasRoute = AuthenticatedVendasRouteImport.update({
 const AuthenticatedNovaVendaRoute = AuthenticatedNovaVendaRouteImport.update({
   id: '/nova-venda',
   path: '/nova-venda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
   '/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
   '/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/historico'
     | '/nova-venda'
     | '/vendas'
     | '/admin/dashboard'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/historico'
     | '/nova-venda'
     | '/vendas'
     | '/admin/dashboard'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/historico'
     | '/_authenticated/nova-venda'
     | '/_authenticated/vendas'
     | '/_authenticated/admin/dashboard'
@@ -189,6 +201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNovaVendaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -229,6 +248,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedNovaVendaRoute: typeof AuthenticatedNovaVendaRoute
   AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
@@ -239,6 +259,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedNovaVendaRoute: AuthenticatedNovaVendaRoute,
   AuthenticatedVendasRoute: AuthenticatedVendasRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
