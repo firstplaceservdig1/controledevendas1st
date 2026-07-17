@@ -67,7 +67,6 @@ function Dashboard() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <Stat title="Total de vendas (mês)" value={String(totalVendas)} />
-        <Stat title="Receita bruta" value={brl(receita)} />
         <Stat title="Comissão acumulada" value={brl(comissao)} />
         <Stat title="Produto mais vendido" value={topProduto} />
       </div>
