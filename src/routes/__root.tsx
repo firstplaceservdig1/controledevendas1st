@@ -83,6 +83,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Sistema interno de registro e acompanhamento de vendas do time comercial." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Vendas — Controle do time comercial" },
+      { name: "twitter:description", content: "Sistema interno de registro e acompanhamento de vendas do time comercial." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0c004d05-df8c-4b49-af6a-6ec17fb8820f/id-preview-0cbbcd74--a10cc74d-a6df-47fa-ad13-86ecc2198302.lovable.app-1784319631102.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0c004d05-df8c-4b49-af6a-6ec17fb8820f/id-preview-0cbbcd74--a10cc74d-a6df-47fa-ad13-86ecc2198302.lovable.app-1784319631102.png" },
     ],
     links: [
       {
