@@ -21,6 +21,7 @@ import { Route as AuthenticatedAdminValidacaoMassaRouteImport } from './routes/_
 import { Route as AuthenticatedAdminValidacaoRouteImport } from './routes/_authenticated/admin/validacao'
 import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated/admin/produtos'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
+import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin/configuracoes'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -86,6 +87,12 @@ const AuthenticatedAdminDashboardRoute =
     path: '/admin/dashboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminConfiguracoesRoute =
+  AuthenticatedAdminConfiguracoesRouteImport.update({
+    id: '/admin/configuracoes',
+    path: '/admin/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/historico': typeof AuthenticatedHistoricoRoute
   '/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/vendas': typeof AuthenticatedVendasRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/validacao': typeof AuthenticatedAdminValidacaoRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/historico': typeof AuthenticatedHistoricoRoute
   '/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/vendas': typeof AuthenticatedVendasRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/validacao': typeof AuthenticatedAdminValidacaoRoute
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/nova-venda': typeof AuthenticatedNovaVendaRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
+  '/_authenticated/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/_authenticated/admin/validacao': typeof AuthenticatedAdminValidacaoRoute
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/nova-venda'
     | '/vendas'
+    | '/admin/configuracoes'
     | '/admin/dashboard'
     | '/admin/produtos'
     | '/admin/validacao'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/nova-venda'
     | '/vendas'
+    | '/admin/configuracoes'
     | '/admin/dashboard'
     | '/admin/produtos'
     | '/admin/validacao'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
     | '/_authenticated/historico'
     | '/_authenticated/nova-venda'
     | '/_authenticated/vendas'
+    | '/_authenticated/admin/configuracoes'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/produtos'
     | '/_authenticated/admin/validacao'
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/configuracoes': {
+      id: '/_authenticated/admin/configuracoes'
+      path: '/admin/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -271,6 +291,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedNovaVendaRoute: typeof AuthenticatedNovaVendaRoute
   AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
+  AuthenticatedAdminConfiguracoesRoute: typeof AuthenticatedAdminConfiguracoesRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
   AuthenticatedAdminValidacaoRoute: typeof AuthenticatedAdminValidacaoRoute
@@ -283,6 +304,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedNovaVendaRoute: AuthenticatedNovaVendaRoute,
   AuthenticatedVendasRoute: AuthenticatedVendasRoute,
+  AuthenticatedAdminConfiguracoesRoute: AuthenticatedAdminConfiguracoesRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
   AuthenticatedAdminValidacaoRoute: AuthenticatedAdminValidacaoRoute,
@@ -301,13 +323,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
