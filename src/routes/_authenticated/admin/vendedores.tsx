@@ -2,12 +2,13 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { createUser } from "@/lib/admin.functions";
+import { createUser, resetUserPassword } from "@/lib/admin.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
@@ -20,11 +21,15 @@ export const Route = createFileRoute("/_authenticated/admin/vendedores")({
 
 function Vendedores() {
   const createUserFn = useServerFn(createUser);
+  const resetPasswordFn = useServerFn(resetUserPassword);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "vendedor" as "vendedor" | "admin" });
   const [saving, setSaving] = useState(false);
+  const [resetTarget, setResetTarget] = useState<any | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   async function load() {
     const [p, r, s] = await Promise.all([
@@ -59,6 +64,18 @@ function Vendedores() {
     finally { setSaving(false); }
   }
 
+  async function submitReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetTarget) return;
+    setResetting(true);
+    try {
+      await resetPasswordFn({ data: { user_id: resetTarget.id, password: newPassword } });
+      toast.success(`Senha de ${resetTarget.full_name || resetTarget.email} redefinida`);
+      setResetTarget(null); setNewPassword("");
+    } catch (err: any) { toast.error(err.message ?? "Erro ao redefinir senha"); }
+    finally { setResetting(false); }
+  }
+
   return (
     <div className="space-y-6">
       <Card className="max-w-2xl">
@@ -89,6 +106,7 @@ function Vendedores() {
             <TableHeader><TableRow>
               <TableHead>Nome</TableHead><TableHead>E-mail</TableHead><TableHead>Perfil</TableHead>
               <TableHead>Vendas</TableHead><TableHead>Receita</TableHead><TableHead>Comissão</TableHead><TableHead>Validadas</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {profiles.map(p => {
@@ -103,6 +121,11 @@ function Vendedores() {
                     <TableCell>{brl(stat.revenue)}</TableCell>
                     <TableCell>{brl(stat.commission)}</TableCell>
                     <TableCell>{stat.validated}/{stat.count}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => { setResetTarget(p); setNewPassword(""); }}>
+                        Resetar senha
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -110,6 +133,24 @@ function Vendedores() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!resetTarget} onOpenChange={(o) => { if (!o) { setResetTarget(null); setNewPassword(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Redefinir senha</DialogTitle></DialogHeader>
+          <form onSubmit={submitReset} className="grid gap-4">
+            <p className="text-sm text-muted-foreground">
+              Definir nova senha para <span className="text-foreground">{resetTarget?.full_name || resetTarget?.email}</span>.
+            </p>
+            <div className="grid gap-2">
+              <Label>Nova senha</Label>
+              <Input type="password" required minLength={6} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={resetting}>{resetting ? "Salvando…" : "Redefinir senha"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
