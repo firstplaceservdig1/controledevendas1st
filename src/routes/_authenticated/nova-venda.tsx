@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { SaleCelebration } from "@/components/sale-celebration";
 
 export const Route = createFileRoute("/_authenticated/nova-venda")({
   ssr: false,
@@ -19,6 +20,8 @@ function NovaVenda() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const [sellerName, setSellerName] = useState<string>("");
   const [form, setForm] = useState({
     product_id: "", amount: "", platform: "", buyer_email: "", buyer_phone: "",
     sale_type: "", notes: "",
@@ -26,7 +29,12 @@ function NovaVenda() {
 
   useEffect(() => {
     supabase.from("products").select("*").eq("active", true).order("name").then(({ data }) => setProducts(data ?? []));
-  }, []);
+    supabase.from("profiles").select("full_name, email").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        const full = (data as any)?.full_name || (user as any)?.user_metadata?.full_name || "";
+        setSellerName((full || (data as any)?.email || user.email || "vendedor").split(" ")[0]);
+      });
+  }, [user.id]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,12 +52,14 @@ function NovaVenda() {
     } as any);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Venda registrada!");
-    navigate({ to: "/vendas" });
+    setCelebrate(true);
   }
 
   return (
     <div className="max-w-2xl">
+      {celebrate && (
+        <SaleCelebration name={sellerName} onClose={() => navigate({ to: "/vendas" })} />
+      )}
       <Card>
         <CardHeader><CardTitle>Nova venda</CardTitle></CardHeader>
         <CardContent>
