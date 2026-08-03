@@ -19,6 +19,7 @@ function Dashboard() {
   const { user, isAdmin } = Route.useRouteContext();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [configDays, setConfigDays] = useState<number | null>(null);
 
   useEffect(() => {
     const now = new Date();
@@ -31,6 +32,13 @@ function Dashboard() {
       .lte("sale_date", last);
     if (!isAdmin) q = q.eq("seller_id", user.id);
     q.then(({ data }) => { setRows(data ?? []); setLoading(false); });
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    supabase
+      .from("month_settings")
+      .select("business_days")
+      .eq("month", monthKey)
+      .maybeSingle()
+      .then(({ data }) => setConfigDays(data ? Number(data.business_days) : null));
   }, [user.id, isAdmin]);
 
   const totalVendas = rows.length;
@@ -50,10 +58,10 @@ function Dashboard() {
 
   const now = new Date();
   const bDays = businessDaysInMonth(now.getFullYear(), now.getMonth());
-  const passedBDays = bDays.filter((d) => d <= now);
   const daysWithSale = new Set(rows.map((r) => r.sale_date));
-  const hit = passedBDays.filter((d) => daysWithSale.has(ymd(d))).length;
-  const bonusOk = hit === passedBDays.length && passedBDays.length > 0;
+  const totalBDays = configDays ?? bDays.length;
+  const hit = daysWithSale.size;
+  const bonusOk = totalBDays > 0 && hit >= totalBDays;
 
   return (
     <div className="space-y-6">
@@ -90,9 +98,10 @@ function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{hit}/{passedBDays.length}</div>
+            <div className="text-3xl font-semibold">{hit}/{totalBDays}</div>
             <div className="text-sm text-muted-foreground mt-1">
-              Dias úteis do mês com pelo menos 1 venda registrada.
+              Dias com pelo menos 1 venda registrada, sobre {totalBDays} dias úteis
+              {configDays != null ? " definidos pelo administrador" : " do calendário"}.
             </div>
           </CardContent>
         </Card>

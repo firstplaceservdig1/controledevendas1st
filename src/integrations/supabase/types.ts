@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      month_settings: {
+        Row: {
+          business_days: number
+          created_at: string
+          id: string
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          business_days: number
+          created_at?: string
+          id?: string
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          business_days?: number
+          created_at?: string
+          id?: string
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_sales: {
         Row: {
           amount: number
