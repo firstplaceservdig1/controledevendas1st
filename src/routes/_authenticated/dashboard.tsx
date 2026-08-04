@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { brl, businessDaysInMonth, ymd } from "@/lib/format";
 import { quoteOfTheDay } from "@/lib/quotes";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
@@ -18,6 +18,7 @@ const META = 800;
 function Dashboard() {
   const { user, isAdmin } = Route.useRouteContext();
   const [rows, setRows] = useState<any[]>([]);
+  const [prevRows, setPrevRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [configDays, setConfigDays] = useState<number | null>(null);
 
@@ -32,6 +33,15 @@ function Dashboard() {
       .lte("sale_date", last);
     if (!isAdmin) q = q.eq("seller_id", user.id);
     q.then(({ data }) => { setRows(data ?? []); setLoading(false); });
+    const pFirst = ymd(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    const pLast = ymd(new Date(now.getFullYear(), now.getMonth(), 0));
+    let pq = supabase
+      .from("sales")
+      .select("amount, commission_amount, sale_date")
+      .gte("sale_date", pFirst)
+      .lte("sale_date", pLast);
+    if (!isAdmin) pq = pq.eq("seller_id", user.id);
+    pq.then(({ data }) => setPrevRows(data ?? []));
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     supabase
       .from("month_settings")
@@ -44,6 +54,9 @@ function Dashboard() {
   const totalVendas = rows.length;
   const comissao = rows.reduce((s, r) => s + Number(r.commission_amount), 0);
   const progresso = Math.min(100, Math.round((comissao / META) * 100));
+
+  const prevVendas = prevRows.length;
+  const prevComissao = prevRows.reduce((s, r) => s + Number(r.commission_amount), 0);
 
   const byType = ["Passiva", "Ativa"].map((t) => ({
     name: t, value: rows.filter((r) => r.sale_type === t).length,
@@ -63,6 +76,13 @@ function Dashboard() {
   const hit = daysWithSale.size;
   const bonusOk = totalBDays > 0 && hit >= totalBDays;
 
+  const weekly = [1, 2, 3, 4].map((w) => ({ name: `S${w}`, vendas: 0 }));
+  rows.forEach((r) => {
+    const day = Number(String(r.sale_date).slice(8, 10));
+    const idx = Math.min(3, Math.floor((day - 1) / 7));
+    weekly[idx].vendas += 1;
+  });
+
   return (
     <div className="space-y-6">
       <Card className="border-accent/30">
@@ -73,8 +93,8 @@ function Dashboard() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Stat title="Total de vendas (mês)" value={String(totalVendas)} />
-        <Stat title="Comissão acumulada" value={brl(comissao)} />
+        <Stat title="Total de vendas (mês)" value={String(totalVendas)} compare={compareText(totalVendas, prevVendas, (n) => String(n))} up={totalVendas >= prevVendas} />
+        <Stat title="Comissão acumulada" value={brl(comissao)} compare={compareText(comissao, prevComissao, brl)} up={comissao >= prevComissao} />
         <Stat title="Produto mais vendido" value={topProduto} />
       </div>
 
@@ -107,36 +127,70 @@ function Dashboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Tipos de venda</CardTitle></CardHeader>
-        <CardContent style={{ height: 280 }}>
-          {loading ? (
-            <div className="text-muted-foreground text-sm">Carregando…</div>
-          ) : totalVendas === 0 ? (
-            <div className="text-muted-foreground text-sm">Sem vendas neste mês ainda.</div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={byType} dataKey="value" nameKey="name" outerRadius={100} label>
-                  <Cell fill="oklch(0.75 0.18 145)" />
-                  <Cell fill="oklch(0.7 0.15 200)" />
-                </Pie>
-                <Tooltip contentStyle={{ background: "hsl(0 0% 12%)", border: "1px solid hsl(0 0% 20%)" }} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Tipos de venda</CardTitle></CardHeader>
+          <CardContent style={{ height: 200 }}>
+            {loading ? (
+              <div className="text-muted-foreground text-sm">Carregando…</div>
+            ) : totalVendas === 0 ? (
+              <div className="text-muted-foreground text-sm">Sem vendas neste mês ainda.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={byType} dataKey="value" nameKey="name" outerRadius={60} label>
+                    <Cell fill="oklch(0.75 0.18 145)" />
+                    <Cell fill="oklch(0.7 0.15 200)" />
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(0 0% 12%)", border: "1px solid hsl(0 0% 20%)" }} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle className="text-base">Evolução semanal de vendas</CardTitle></CardHeader>
+          <CardContent style={{ height: 200 }}>
+            {loading ? (
+              <div className="text-muted-foreground text-sm">Carregando…</div>
+            ) : totalVendas === 0 ? (
+              <div className="text-muted-foreground text-sm">Sem vendas neste mês ainda.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weekly}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 20%)" />
+                  <XAxis dataKey="name" stroke="hsl(0 0% 60%)" fontSize={12} />
+                  <YAxis allowDecimals={false} stroke="hsl(0 0% 60%)" fontSize={12} />
+                  <Tooltip contentStyle={{ background: "hsl(0 0% 12%)", border: "1px solid hsl(0 0% 20%)" }} />
+                  <Bar dataKey="vendas" fill="oklch(0.75 0.18 145)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function Stat({ title, value }: { title: string; value: string }) {
+function compareText(cur: number, prev: number, fmt: (n: number) => string) {
+  const diff = cur - prev;
+  const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
+  const sign = diff > 0 ? "+" : diff < 0 ? "−" : "";
+  return `${sign}${fmt(Math.abs(diff))}${pct != null ? ` (${sign}${Math.abs(pct)}%)` : ""} vs. mês anterior · ${fmt(prev)}`;
+}
+
+function Stat({ title, value, compare, up }: { title: string; value: string; compare?: string; up?: boolean }) {
   return (
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</CardTitle></CardHeader>
-      <CardContent><div className="text-2xl font-semibold truncate">{value}</div></CardContent>
+      <CardContent>
+        <div className="text-2xl font-semibold truncate">{value}</div>
+        {compare && (
+          <div className={`mt-1 text-[11px] ${up ? "text-accent" : "text-destructive"}`}>{compare}</div>
+        )}
+      </CardContent>
     </Card>
   );
 }
