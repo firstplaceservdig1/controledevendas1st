@@ -69,6 +69,8 @@ function ValidacaoMassa() {
   });
   const [defaultPlatform, setDefaultPlatform] = useState<string>("");
   const [imported, setImported] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
