@@ -143,7 +143,11 @@ function ValidacaoMassa() {
           });
         });
         if (payload.length === 0) {
-          toast.error("Nenhuma linha válida encontrada.");
+          toast.error(
+            errors.length
+              ? `Nenhuma linha válida. Ex.: ${errors.slice(0, 2).join(" | ")}`
+              : "Nenhuma linha válida encontrada.",
+          );
           if (errors.length) console.warn(errors);
           setProcessing(false);
           return;
