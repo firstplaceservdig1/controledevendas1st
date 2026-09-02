@@ -111,11 +111,22 @@ function ValidacaoMassa() {
         const payload: any[] = [];
         const errors: string[] = [];
         rows.forEach((r, i) => {
-          const dateRaw = pick(r, ["data da compra", "data", "purchase date", "data compra"]);
-          const email = pick(r, ["e-mail do comprador", "email do comprador", "email", "e-mail", "buyer email"]).trim();
+          const dateRaw = pick(r, [
+            "data da compra", "data", "purchase date", "data compra",
+            "data de criacao", "data de criação", "data de aprovacao", "data de aprovação",
+          ]);
+          const email = pick(r, [
+            "e-mail do comprador", "email do comprador", "email", "e-mail", "buyer email",
+            "email do cliente", "e-mail do cliente",
+          ]).trim();
           const status = pick(r, ["status da compra", "status", "situacao", "situação"]);
           const platformRaw = pick(r, ["plataforma", "platform"]);
-          const amountRaw = pick(r, ["valor total", "valor", "amount", "total"]);
+          const amountRaw = pick(r, [
+            "valor total", "valor", "amount", "total",
+            "preco base do produto", "preço base do produto",
+            "total com acrescimo", "total com acréscimo",
+            "valor da compra em moeda da conta", "valor liquido", "valor líquido",
+          ]);
           if (!email || !amountRaw) { errors.push(`Linha ${i + 2}: e-mail ou valor ausente`); return; }
           const platform = matchPlatform(platformRaw) ?? matchPlatform(defaultPlatform);
           if (!platform) { errors.push(`Linha ${i + 2}: plataforma inválida (${platformRaw || "vazia"})`); return; }
@@ -132,7 +143,11 @@ function ValidacaoMassa() {
           });
         });
         if (payload.length === 0) {
-          toast.error("Nenhuma linha válida encontrada.");
+          toast.error(
+            errors.length
+              ? `Nenhuma linha válida. Ex.: ${errors.slice(0, 2).join(" | ")}`
+              : "Nenhuma linha válida encontrada.",
+          );
           if (errors.length) console.warn(errors);
           setProcessing(false);
           return;
