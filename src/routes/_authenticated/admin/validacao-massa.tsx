@@ -23,13 +23,23 @@ export const Route = createFileRoute("/_authenticated/admin/validacao-massa")({
 const PLATFORMS = ["Kiwify", "Hotmart", "Lia", "Própria"] as const;
 
 function normalizeHeader(h: string) {
-  return h
+  return (h ?? "")
+    .replace(/\uFEFF/g, "")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().trim().replace(/\s+/g, " ");
 }
 function parseNumber(v: string): number {
   if (v == null) return NaN;
-  const s = String(v).replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".");
+  let s = String(v).replace(/[R$\s]/g, "").replace(/\uFEFF/g, "");
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma > -1 && lastComma > lastDot) {
+    // BR format: 1.234,56
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (lastComma > -1) {
+    // US format: 1,234.56
+    s = s.replace(/,/g, "");
+  }
   const n = Number(s);
   if (!Number.isNaN(n)) return n;
   return Number(String(v).replace(/[^0-9.\-]/g, ""));
