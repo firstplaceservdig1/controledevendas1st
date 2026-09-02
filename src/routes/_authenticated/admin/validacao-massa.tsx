@@ -134,17 +134,20 @@ function ValidacaoMassa() {
         if (payload.length === 0) {
           toast.error("Nenhuma linha válida encontrada.");
           if (errors.length) console.warn(errors);
+          setProcessing(false);
           return;
         }
         const del = await supabase.from("platform_sales").delete().eq("month", monthFilter);
-        if (del.error) { toast.error(del.error.message); return; }
+        if (del.error) { toast.error(del.error.message); setProcessing(false); return; }
         const ins = await supabase.from("platform_sales").insert(payload);
-        if (ins.error) { toast.error(ins.error.message); return; }
+        if (ins.error) { toast.error(ins.error.message); setProcessing(false); return; }
         toast.success(`${payload.length} registros importados${errors.length ? ` (${errors.length} ignorados)` : ""}`);
         if (fileRef.current) fileRef.current.value = "";
+        setSelectedFile(null);
+        setProcessing(false);
         load();
       },
-      error: (err) => toast.error(err.message),
+      error: (err) => { toast.error(err.message); setProcessing(false); },
     });
   }
 
