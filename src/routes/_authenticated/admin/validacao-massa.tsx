@@ -69,6 +69,8 @@ function ValidacaoMassa() {
   });
   const [defaultPlatform, setDefaultPlatform] = useState<string>("");
   const [imported, setImported] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -132,17 +134,20 @@ function ValidacaoMassa() {
         if (payload.length === 0) {
           toast.error("Nenhuma linha válida encontrada.");
           if (errors.length) console.warn(errors);
+          setProcessing(false);
           return;
         }
         const del = await supabase.from("platform_sales").delete().eq("month", monthFilter);
-        if (del.error) { toast.error(del.error.message); return; }
+        if (del.error) { toast.error(del.error.message); setProcessing(false); return; }
         const ins = await supabase.from("platform_sales").insert(payload);
-        if (ins.error) { toast.error(ins.error.message); return; }
+        if (ins.error) { toast.error(ins.error.message); setProcessing(false); return; }
         toast.success(`${payload.length} registros importados${errors.length ? ` (${errors.length} ignorados)` : ""}`);
         if (fileRef.current) fileRef.current.value = "";
+        setSelectedFile(null);
+        setProcessing(false);
         load();
       },
-      error: (err) => toast.error(err.message),
+      error: (err) => { toast.error(err.message); setProcessing(false); },
     });
   }
 
@@ -202,8 +207,17 @@ function ValidacaoMassa() {
               <Label>Arquivo CSV</Label>
               <div className="flex gap-2">
                 <Input ref={fileRef} type="file" accept=".csv,text/csv"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
+                <Button
+                  disabled={!selectedFile || processing}
+                  onClick={() => { if (selectedFile) { setProcessing(true); handleFile(selectedFile); } }}
+                >
+                  <Upload className="h-4 w-4 mr-1" /> {processing ? "Processando..." : "Processar"}
+                </Button>
               </div>
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground truncate">{selectedFile.name}</p>
+              )}
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
