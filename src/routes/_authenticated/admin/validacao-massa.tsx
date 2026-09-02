@@ -23,13 +23,23 @@ export const Route = createFileRoute("/_authenticated/admin/validacao-massa")({
 const PLATFORMS = ["Kiwify", "Hotmart", "Lia", "Própria"] as const;
 
 function normalizeHeader(h: string) {
-  return h
+  return (h ?? "")
+    .replace(/\uFEFF/g, "")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().trim().replace(/\s+/g, " ");
 }
 function parseNumber(v: string): number {
   if (v == null) return NaN;
-  const s = String(v).replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".");
+  let s = String(v).replace(/[R$\s]/g, "").replace(/\uFEFF/g, "");
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma > -1 && lastComma > lastDot) {
+    // BR format: 1.234,56
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (lastComma > -1) {
+    // US format: 1,234.56
+    s = s.replace(/,/g, "");
+  }
   const n = Number(s);
   if (!Number.isNaN(n)) return n;
   return Number(String(v).replace(/[^0-9.\-]/g, ""));
@@ -113,19 +123,22 @@ function ValidacaoMassa() {
         rows.forEach((r, i) => {
           const dateRaw = pick(r, [
             "data da compra", "data", "purchase date", "data compra",
-            "data de criacao", "data de criação", "data de aprovacao", "data de aprovação",
+            "data de criacao", "data de aprovacao",
+            "data de venda", "data de confirmacao",
           ]);
           const email = pick(r, [
             "e-mail do comprador", "email do comprador", "email", "e-mail", "buyer email",
             "email do cliente", "e-mail do cliente",
           ]).trim();
-          const status = pick(r, ["status da compra", "status", "situacao", "situação"]);
+          const status = pick(r, ["status da compra", "status", "situacao"]);
           const platformRaw = pick(r, ["plataforma", "platform"]);
           const amountRaw = pick(r, [
             "valor total", "valor", "amount", "total",
-            "preco base do produto", "preço base do produto",
-            "total com acrescimo", "total com acréscimo",
-            "valor da compra em moeda da conta", "valor liquido", "valor líquido",
+            "preco total", "preco total convertido",
+            "preco base do produto",
+            "total com acrescimo",
+            "valor da compra em moeda da conta", "valor liquido",
+            "preco da oferta", "preco do produto", "preco original",
           ]);
           if (!email || !amountRaw) { errors.push(`Linha ${i + 2}: e-mail ou valor ausente`); return; }
           const platform = matchPlatform(platformRaw) ?? matchPlatform(defaultPlatform);
