@@ -207,8 +207,17 @@ function ValidacaoMassa() {
               <Label>Arquivo CSV</Label>
               <div className="flex gap-2">
                 <Input ref={fileRef} type="file" accept=".csv,text/csv"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
+                <Button
+                  disabled={!selectedFile || processing}
+                  onClick={() => { if (selectedFile) { setProcessing(true); handleFile(selectedFile); } }}
+                >
+                  <Upload className="h-4 w-4 mr-1" /> {processing ? "Processando..." : "Processar"}
+                </Button>
               </div>
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground truncate">{selectedFile.name}</p>
+              )}
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
