@@ -113,19 +113,22 @@ function ValidacaoMassa() {
         rows.forEach((r, i) => {
           const dateRaw = pick(r, [
             "data da compra", "data", "purchase date", "data compra",
-            "data de criacao", "data de criação", "data de aprovacao", "data de aprovação",
+            "data de criacao", "data de aprovacao",
+            "data de venda", "data de confirmacao",
           ]);
           const email = pick(r, [
             "e-mail do comprador", "email do comprador", "email", "e-mail", "buyer email",
             "email do cliente", "e-mail do cliente",
           ]).trim();
-          const status = pick(r, ["status da compra", "status", "situacao", "situação"]);
+          const status = pick(r, ["status da compra", "status", "situacao"]);
           const platformRaw = pick(r, ["plataforma", "platform"]);
           const amountRaw = pick(r, [
             "valor total", "valor", "amount", "total",
-            "preco base do produto", "preço base do produto",
-            "total com acrescimo", "total com acréscimo",
-            "valor da compra em moeda da conta", "valor liquido", "valor líquido",
+            "preco total", "preco total convertido",
+            "preco base do produto",
+            "total com acrescimo",
+            "valor da compra em moeda da conta", "valor liquido",
+            "preco da oferta", "preco do produto", "preco original",
           ]);
           if (!email || !amountRaw) { errors.push(`Linha ${i + 2}: e-mail ou valor ausente`); return; }
           const platform = matchPlatform(platformRaw) ?? matchPlatform(defaultPlatform);
