@@ -100,10 +100,19 @@ function AdminDashboard() {
       if (r.validated) cur.validadas += 1;
       m.set(r.seller_id, cur);
     }
+    const days = new Map<string, Set<string>>();
+    for (const r of rows) {
+      if (!r.validated || r.refunded) continue;
+      const dow = new Date(`${r.sale_date}T12:00:00`).getDay();
+      if (dow === 0 || dow === 6) continue;
+      if (!days.has(r.seller_id)) days.set(r.seller_id, new Set());
+      days.get(r.seller_id)!.add(r.sale_date);
+    }
     return [...m.entries()].map(([id, v]) => ({
       id,
       nome: profiles.get(id)?.full_name || profiles.get(id)?.email || "—",
       ...v,
+      diasOk: days.get(id)?.size ?? 0,
     })).sort((a, b) => b.receita - a.receita);
   }, [rows, profiles]);
 
