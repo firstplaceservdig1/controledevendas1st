@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { brl, ymd } from "@/lib/format";
+import { brl, ymd, businessDaysInMonth } from "@/lib/format";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
@@ -50,6 +50,8 @@ function AdminDashboard() {
 
   const monthOptions = useMemo(() => generateMonthOptions(), []);
 
+  const [configDays, setConfigDays] = useState<number | null>(null);
+
   useEffect(() => {
     const { first, last } = monthBounds(month);
     supabase.from("sales").select("*, products(name)")
@@ -58,7 +60,15 @@ function AdminDashboard() {
       .then(({ data }) => setRows(data ?? []));
     supabase.from("profiles").select("*")
       .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p]))));
+    supabase.from("month_settings").select("business_days").eq("month", month).maybeSingle()
+      .then(({ data }) => setConfigDays(data ? Number(data.business_days) : null));
   }, [month]);
+
+  const totalBDays = useMemo(() => {
+    if (configDays != null) return configDays;
+    const { y, m } = monthBounds(month);
+    return businessDaysInMonth(y, m - 1).length;
+  }, [configDays, month]);
 
   const filteredRows = useMemo(() => {
     if (sellerFilter === "all") return rows;
@@ -90,10 +100,19 @@ function AdminDashboard() {
       if (r.validated) cur.validadas += 1;
       m.set(r.seller_id, cur);
     }
+    const days = new Map<string, Set<string>>();
+    for (const r of rows) {
+      if (!r.validated || r.refunded) continue;
+      const dow = new Date(`${r.sale_date}T12:00:00`).getDay();
+      if (dow === 0 || dow === 6) continue;
+      if (!days.has(r.seller_id)) days.set(r.seller_id, new Set());
+      days.get(r.seller_id)!.add(r.sale_date);
+    }
     return [...m.entries()].map(([id, v]) => ({
       id,
       nome: profiles.get(id)?.full_name || profiles.get(id)?.email || "—",
       ...v,
+      diasOk: days.get(id)?.size ?? 0,
     })).sort((a, b) => b.receita - a.receita);
   }, [rows, profiles]);
 
@@ -166,6 +185,7 @@ function AdminDashboard() {
               <TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Líquido agência</TableHead>
               <TableHead className="text-right">Comissão</TableHead>
               <TableHead className="text-right">Validadas</TableHead>
+              <TableHead className="text-right">Meta diária</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {bySeller.map((s) => (
@@ -180,9 +200,19 @@ function AdminDashboard() {
                       {s.validadas}/{s.vendas}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-right">
+                    {(() => {
+                      const ok = totalBDays > 0 && s.diasOk >= totalBDays;
+                      return (
+                        <Badge variant={ok ? "default" : "secondary"} className={ok ? "bg-accent text-accent-foreground" : ""}>
+                          {s.diasOk}/{totalBDays} · {ok ? "Bateu" : "Não bateu"}
+                        </Badge>
+                      );
+                    })()}
+                  </TableCell>
                 </TableRow>
               ))}
-              {bySeller.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Sem vendas no mês.</TableCell></TableRow>}
+              {bySeller.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sem vendas no mês.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
