@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { brl, ymd } from "@/lib/format";
+import { brl, ymd, businessDaysInMonth } from "@/lib/format";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
@@ -50,6 +50,8 @@ function AdminDashboard() {
 
   const monthOptions = useMemo(() => generateMonthOptions(), []);
 
+  const [configDays, setConfigDays] = useState<number | null>(null);
+
   useEffect(() => {
     const { first, last } = monthBounds(month);
     supabase.from("sales").select("*, products(name)")
@@ -58,7 +60,15 @@ function AdminDashboard() {
       .then(({ data }) => setRows(data ?? []));
     supabase.from("profiles").select("*")
       .then(({ data }) => setProfiles(new Map((data ?? []).map((p: any) => [p.id, p]))));
+    supabase.from("month_settings").select("business_days").eq("month", month).maybeSingle()
+      .then(({ data }) => setConfigDays(data ? Number(data.business_days) : null));
   }, [month]);
+
+  const totalBDays = useMemo(() => {
+    if (configDays != null) return configDays;
+    const { y, m } = monthBounds(month);
+    return businessDaysInMonth(y, m - 1).length;
+  }, [configDays, month]);
 
   const filteredRows = useMemo(() => {
     if (sellerFilter === "all") return rows;
