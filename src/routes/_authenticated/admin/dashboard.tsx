@@ -185,6 +185,7 @@ function AdminDashboard() {
               <TableHead className="text-right">Receita</TableHead><TableHead className="text-right">Líquido agência</TableHead>
               <TableHead className="text-right">Comissão</TableHead>
               <TableHead className="text-right">Validadas</TableHead>
+              <TableHead className="text-right">Meta diária</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {bySeller.map((s) => (
@@ -199,9 +200,19 @@ function AdminDashboard() {
                       {s.validadas}/{s.vendas}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-right">
+                    {(() => {
+                      const ok = totalBDays > 0 && s.diasOk >= totalBDays;
+                      return (
+                        <Badge variant={ok ? "default" : "secondary"} className={ok ? "bg-accent text-accent-foreground" : ""}>
+                          {s.diasOk}/{totalBDays} · {ok ? "Bateu" : "Não bateu"}
+                        </Badge>
+                      );
+                    })()}
+                  </TableCell>
                 </TableRow>
               ))}
-              {bySeller.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Sem vendas no mês.</TableCell></TableRow>}
+              {bySeller.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sem vendas no mês.</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
